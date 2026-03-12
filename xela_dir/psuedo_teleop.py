@@ -4,17 +4,19 @@ import MyXela
 import numpy as np
 import matplotlib.pyplot as plt
 feature_extractor = MyXela.XelaTactileFeatureExtractor()
+import time
 # Path to the JSON file
 json_file_path = "xelaDataset/xela_record_0000_1768303296.json"
 
 ##### mqtt variables ####
 _MQTT=True
 BROKER_EDGE_IP =  "10.10.12.24"
-BROKER_CUSTOM_CLOUD_IP = "54.221.62.72"
-BROKER_CLOUD_IP=   "test.mosquitto.org"
+BROKER_CUSTOM_CLOUD_IP = "54.81.75.57"
+# BROKER_CLOUD_IP=   "test.mosquitto.org"
 
-
-
+global sync_time, crnt_pckt_num
+sync_time= 1773291123
+crnt_pckt_num = 0  # current packet number
 ################################## MQTT SETUP - optional ##################################
 import paho.mqtt.client as mqtt
 
@@ -47,6 +49,7 @@ if _MQTT:
 
 
 def print_values_from_json(json_file_path):
+    global crnt_pckt_num
     """
     Reads a JSON file and prints the values at each timestep.
 
@@ -72,14 +75,17 @@ def print_values_from_json(json_file_path):
             
             print(f"Extracted features: {feature_extractor.fz_norm.shape, feature_extractor.fy_norm.shape, feature_extractor.fz_norm.shape}")
             # output -> add size Extracted features: ((16,), (16,), (16,))
-            pub_val=np.max(feature_extractor.fz_norm)  # for force value
+            pub_val=round(np.max(feature_extractor.fz_norm),3)  # for force value
             shape_value = round(np.random.uniform(0,0.5), 2) # for shape value
-            payload= json.dumps({"xela_1": pub_val,"arm_shape": shape_value})
-            print("publishing topic: ", node_topic, " payload: ", payload)
             if _MQTT:
+                crnt_pckt_num+=1
+                sent_time=round((time.time()-sync_time),3)
+                sent_time = sent_time%1000
+                payload= json.dumps({"xela_1": pub_val,"arm_shape": shape_value,"packet_info": [crnt_pckt_num,sent_time]})
+                print("publishing topic: ", node_topic, " payload: ", payload, "packet_info: ", [crnt_pckt_num,sent_time])
                 client.publish(node_topic, payload)  # Publish to topic1
             data_array.append(feature_extractor.norm_special)
-            time.sleep(0.1)  # simulate delay between timesteps
+            time.sleep(2.1)  # simulate delay between timesteps
 
     except Exception as e:
         print(f"Error reading JSON file: {e}")
