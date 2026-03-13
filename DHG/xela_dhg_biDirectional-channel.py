@@ -6,10 +6,9 @@ import paho.mqtt.client as mqtt
 import json
 import logging
 logging.basicConfig(filename='pinch.log', level=logging.INFO, format='%(asctime)s %(message)s')
-from datetime import datetime
-now=datetime.now
-print("datetime hours: {}, min: {}, sec: {}".format(now.hour,now.minute,now.seconds)
-
+global pkt_hist,crnt_pkt
+crnt_pckt_num =0
+pkt_hist=[]
 # random_stiff=round(np.random.uniform(),2)
 N=100
 
@@ -57,22 +56,19 @@ def on_message(client, userdata, msg):
     print("Topic:", msg.topic)
     print("Message:", data)
     if msg.topic=="CAS/haptic_feedback": 
-        print("updating stiffness {}".format(data["stiffness"]))
-        packet_info=list(format(data["packet_info"]))
-        print("time stamp: {}".format(data["packet_info"]))
-        # datetime.now()
-        # print("datetime hours: {}, min: {}, sec: {}".format(now.hour,now.minute,now.seconds)
-        # now_min=now.minute*60+now.seconds
-        now_min=time.time()-start_time
-        sent_min=data["packet_info"][0]
-        latency=now_min-sent_min
-        print("sent time: {}, now_time: {}".format(now_min,sent_min,latency)))
+        # calculation of latency
 
+        rec_time=(time.time()-start_time)%1000
+        crnt_pkt, sent_time=data["packet_info"][0],data["packet_info"][1] # currnt_packet ,time stamp
+        latency=rec_time-sent_time
+        pkt_hist.append([crnt_pckt_num,rec_time,sent_time])
+        print("sent time: {}, rec_time: {}, latency:{} ".format(sent_time,rec_time,latency))
         # print("updating set_point {}".format(data["arm_shape"]))
         logging.info("updating stiffness {}".format(data["stiffness"]))
         # logging.info("updating set_point {}".format(data["arm_shape"]))
         set_point=0.3 # 0 means open, 1 means close
-        call_stiff_changer(data["stiffness"], 0.2)
+        print("updating stiffness {}".format(data["stiffness"]))
+        call_stiff_changer(data["stiffness"], set_point)
         
     #test_write_worker
 

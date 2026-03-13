@@ -31,7 +31,9 @@ def on_message(client, userdata, msg):
         # 2. Parse string to JSON (dictionary)
     data = json.loads(payload_str)
     data=dict(data)
-    rec_time=(time.time()-sync_time)%1000
+    rec_time= time.time()
+    rec_time=(rec_time)%1000
+    print(f"rec_time: {rec_time}")
     packet_no,sent_time= data["packet_info"][0], data["packet_info"][1] #[packet,sent_Time]
     packet_lat=round((rec_time-sent_time),3 )
     print(f"pakcet number: {packet_no}, latency: {packet_lat}, rec_time: {rec_time}, sent_time: {sent_time}")
