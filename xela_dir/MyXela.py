@@ -12,18 +12,25 @@ class XelaTactileFeatureExtractor:
     _MEAN_REST = None
     _STD_REST = None
     _NORM_FAST_XELA_ABS_MAX = None
+    _MEAN_X,_MEAN_Y,_MEAN_Z = None,None,None
+    
+    
     # dataset path relative to THIS file
     _DATASET_PATH = Path(__file__).resolve().parent / "xelaDataset"
 
     def __init__(self, force_threshold=50):
         self.force_threshold = force_threshold
         self.special = None
+        self.fx_raw,self.fy_raw,self.fz_raw = None, None, None
 
         # Load constants once
         self._load_rest_stats()
 
         self.mean_rest = self._MEAN_REST
         self.std_rest = self._STD_REST
+        self.mean_x = self._MEAN_X
+        self.mean_y = self._MEAN_Y
+        self.mean_z= self._MEAN_Z
 
         # print(
         #     f"Initialized XelaTactileFeatureExtractor "
@@ -39,6 +46,11 @@ class XelaTactileFeatureExtractor:
 
         mean_path = cls._DATASET_PATH / "mean_rest.npy"
         std_path = cls._DATASET_PATH / "sigma_rest.npy"
+        # if cls._DATASET_PATH / "x_mean.npy".exist():
+        mean_x =  cls._DATASET_PATH / "x_mean.npy"
+        mean_y = cls._DATASET_PATH / "y_mean.npy"
+        mean_z = cls._DATASET_PATH / "z_mean.npy"
+        # else: mean_x,mean_y,mean_z = None, None, None
         norm_fast_xela_abs_max_path = cls._DATASET_PATH / "norm_fast_xela_abs_max.npy"
 
         if not mean_path.exists():
@@ -49,16 +61,19 @@ class XelaTactileFeatureExtractor:
         cls._MEAN_REST = np.load(mean_path)
         cls._STD_REST = np.load(std_path)
         cls._NORM_FAST_XELA_ABS_MAX = np.array([971.8997973376092, 4670.376938531569, 1717.4039052922467])  #np.load(norm_fast_xela_abs_max_path)
+        cls._MEAN_X = np.load(mean_x)
+        cls._MEAN_Y = np.load(mean_y)
+        cls._MEAN_Z = np.load(mean_z)
 
     def extract_force(self, frame_dict):
         sensor = frame_dict['1']
         special = np.array(sensor['special'])
 
         # Core signals
-        
-        Fx = special[:, 0]
-        Fy = special[:, 1]
-        Fz = special[:, 2]
+
+        Fx = special[:, 0] 
+        Fy = special[:, 1] 
+        Fz = special[:, 2] 
         temperature = special[:, 3]
         normal_force = special[:, 6]
         pressure = special[:, 11]
@@ -67,6 +82,11 @@ class XelaTactileFeatureExtractor:
         self.norm_special= np.abs((special[:,:3] - self.mean_rest) / self.std_rest) # normalize --> value - mean / std
         self.norm_special = self.norm_special / self._NORM_FAST_XELA_ABS_MAX  # scale to max observed
         self.fx_norm, self.fy_norm, self.fz_norm = self.norm_special[:, 0], self.norm_special[:, 1], self.norm_special[:, 2]
+
+        ############### detect touch ##################
+        self.fx_touch , self.fy_touch , self.fz_touch = (Fx-32000) , (Fy-32000), (Fz-35000)  # emperical values
+        self.fx_touch , self.fy_touch , self.fz_touch = (self.fx_touch-self.mean_x)/self.mean_x , (self.fy_touch-self.mean_y)/self.mean_y , (self.fz_touch-self.mean_z)/self.mean_z  
+        
         
         
     def normalize_force(self):

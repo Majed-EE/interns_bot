@@ -79,8 +79,8 @@ def print_values_from_json(json_file_path):
             shape_value = round(np.random.uniform(0,0.5), 2) # for shape value
             if _MQTT:
                 crnt_pckt_num+=1
-                sent_time=round((time.time()-sync_time),3)
-                sent_time = sent_time%1000
+                # sent_time=round()
+                sent_time = round((sent_time%1000),4)
                 payload= json.dumps({"xela_1": pub_val,"arm_shape": shape_value,"packet_info": [crnt_pckt_num,sent_time]})
                 print("publishing topic: ", node_topic, " payload: ", payload, "packet_info: ", [crnt_pckt_num,sent_time])
                 client.publish(node_topic, payload)  # Publish to topic1
